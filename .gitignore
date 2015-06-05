@@ -1,0 +1,12 @@
+.apt_generated/
+.classpath
+.factorypath
+.gradle
+.idea
+.project
+.settings
+artifacts/
+bin/
+build/
+dump.rdb
+*.iml
