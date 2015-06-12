@@ -17,26 +17,36 @@
 package org.springframework.pipes.module.launcher;
 
 import java.io.File;
+import java.net.URL;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+
+import org.springframework.boot.builder.SpringApplicationBuilder;
+import org.springframework.boot.loader.archive.JarFileArchive;
+import org.springframework.core.io.DefaultResourceLoader;
+import org.springframework.pipes.module.classloader.ParentLastURLClassLoader;
+import org.springframework.util.StringUtils;
 
 /**
- * Bootstrap for launching a module. The path to a module relative to the module home
- * must be provided via the "module" system property or "MODULE" environment variable.
- * The module home itself may be provided via the "module.home" system property or
- * "MODULE_HOME" environment variable. The default module home is: /opt/spring/modules 
+ * Bootstrap for launching one or more modules. The module path(s), relative to the module home, must be provided via
+ * the "modules" system property or "MODULES" environment variable as a comma-delimited list. The module home directory
+ * itself may be provided via the "module.home" system property or "MODULE_HOME" environment variable. The default
+ * module home directory is: /opt/spring/modules
  *
  * @author Mark Fisher
+ * @author Ilayaperumal Gopinathan
  */
 public class ModuleLauncher {
 
 	private static final String DEFAULT_MODULE_HOME = "/opt/spring/modules";
 
 	public static void main(String[] args) throws Exception {
-		String module = System.getProperty("module");
-		if (module == null) {
-			module = System.getenv("MODULE");
+		String modules = System.getProperty("modules");
+		if (modules == null) {
+			modules = System.getenv("MODULES");
 		}
-		if (module == null) {
-			System.err.println("Either the 'module' system property or 'MODULE' environment variable is required.");
+		if (modules == null) {
+			System.err.println("Either the 'modules' system property or 'MODULES' environment variable is required.");
 			System.exit(1);
 		}
 		String moduleHome = System.getProperty("module.home");
@@ -46,18 +56,44 @@ public class ModuleLauncher {
 		if (moduleHome == null) {
 			moduleHome = DEFAULT_MODULE_HOME;
 		}
-		File file = new File(moduleHome + "/" + module + ".jar");
-		ProcessBuilder builder = new ProcessBuilder("java", "-jar", file.getAbsolutePath());
-		builder.inheritIO();
-		final Process process = builder.start();
-		Runnable hook = new Runnable() {
+		launchModules(new File(moduleHome), StringUtils.tokenizeToStringArray(modules, ","));
+	}
 
-			@Override
-			public void run() {
-				process.destroy();
+	private static void launchModules(File moduleHome, String... modules) {
+		Executor executor = Executors.newFixedThreadPool(modules.length);
+		for (String module : modules) {
+			module = (module.endsWith(".jar")) ? module : module + ".jar";
+			executor.execute(new ModuleLaunchTask(new File(moduleHome, module)));
+		}
+	}
+
+	private static class ModuleLaunchTask implements Runnable {
+
+		private static int SERVER_PORT_SEQUENCE = 8080;
+
+		private final File file;
+
+		private final int serverPort;
+
+		ModuleLaunchTask(File file) {
+			this.file = file;
+			this.serverPort = SERVER_PORT_SEQUENCE++;
+		}
+
+		@Override
+		public void run() {
+			try {
+				JarFileArchive jarFileArchive = new JarFileArchive(file);
+				ParentLastURLClassLoader classLoader = new ParentLastURLClassLoader(new URL[] { jarFileArchive.getUrl() },
+						Thread.currentThread().getContextClassLoader());
+				Thread.currentThread().setContextClassLoader(classLoader);
+				new SpringApplicationBuilder(jarFileArchive.getMainClass())
+						.resourceLoader(new DefaultResourceLoader(classLoader))
+						.run("--spring.jmx.default-domain=module-" + serverPort, "--server.port=" + serverPort);
 			}
-		};
-		Runtime.getRuntime().addShutdownHook(new Thread(hook));
-		process.waitFor();
+			catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
 	}
 }
