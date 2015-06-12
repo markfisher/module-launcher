@@ -22,7 +22,8 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.jar.JarFile;
 
-import org.springframework.boot.SpringApplication;
+import org.springframework.boot.builder.SpringApplicationBuilder;
+import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.util.StringUtils;
 import org.springframework.xd.module.support.ParentLastURLClassLoader;
 
@@ -82,7 +83,9 @@ public class MultiModuleLauncher {
 				JarFile jarFile = new JarFile(file);
 				String mainClass = jarFile.getManifest().getMainAttributes().getValue("Start-Class");
 				jarFile.close();
-				new SpringApplication(classLoader.loadClass(mainClass)).run("--spring.jmx.default-domain=module-" + serverPort, "--server.port=" + serverPort, "--format=yyyy-MM-dd HH:mm:ss");
+				new SpringApplicationBuilder(mainClass)
+						.resourceLoader(new DefaultResourceLoader(classLoader))
+						.run("--spring.jmx.default-domain=module-" + serverPort, "--server.port=" + serverPort, "--format=yyyy-MM-dd HH:mm:ss");
 			}
 			catch (Exception e) {
 				e.printStackTrace();
