@@ -30,7 +30,7 @@ public class ModuleLauncher {
 
 	private static final String DEFAULT_MODULE_HOME = "/opt/spring/modules";
 
-	public static void main(String[] args) throws Exception {
+	public static void notamain(String[] args) throws Exception {
 		String module = System.getProperty("module");
 		if (module == null) {
 			module = System.getenv("MODULE");
