@@ -9,4 +9,6 @@ artifacts/
 bin/
 build/
 dump.rdb
+*.ipr
+*.iws
 *.iml
