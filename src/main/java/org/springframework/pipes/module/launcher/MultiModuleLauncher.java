@@ -18,17 +18,17 @@ package org.springframework.pipes.module.launcher;
 
 import java.io.File;
 import java.net.URL;
-import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
-import java.util.jar.JarFile;
 
 import org.springframework.boot.builder.SpringApplicationBuilder;
+import org.springframework.boot.loader.archive.JarFileArchive;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.util.StringUtils;
 import org.springframework.xd.module.support.ParentLastURLClassLoader;
 
 /**
  * @author Mark Fisher
+ * @author Ilayaperumal Gopinathan
  */
 public class MultiModuleLauncher {
 
@@ -54,10 +54,10 @@ public class MultiModuleLauncher {
 	}
 
 	private static void launchModules(File moduleHome, String... modules) {
-		Executor executor = Executors.newFixedThreadPool(modules.length);
+		//Executor executor = Executors.newFixedThreadPool(modules.length);
 		for (String module : modules) {
 			module = (module.endsWith(".jar")) ? module : module + ".jar";
-			executor.execute(new ModuleLaunchTask(new File(moduleHome, module)));
+			Executors.newSingleThreadExecutor().execute(new ModuleLaunchTask(new File(moduleHome, module)));
 		}
 	}
 
@@ -77,15 +77,12 @@ public class MultiModuleLauncher {
 		@Override
 		public void run() {
 			try {
-				URL url = new URL("jar", "","file:" + file.getAbsolutePath()+"!/");
-				ParentLastURLClassLoader classLoader = new ParentLastURLClassLoader(new URL[] { url }, Thread.currentThread().getContextClassLoader());
+				JarFileArchive jarFileArchive = new JarFileArchive(file);
+				ParentLastURLClassLoader classLoader = new ParentLastURLClassLoader(new URL[] {jarFileArchive.getUrl()}, Thread.currentThread().getContextClassLoader());
 				Thread.currentThread().setContextClassLoader(classLoader);
-				JarFile jarFile = new JarFile(file);
-				String mainClass = jarFile.getManifest().getMainAttributes().getValue("Start-Class");
-				jarFile.close();
-				new SpringApplicationBuilder(mainClass)
+				new SpringApplicationBuilder(jarFileArchive.getMainClass())
 						.resourceLoader(new DefaultResourceLoader(classLoader))
-						.run("--spring.jmx.default-domain=module-" + serverPort, "--server.port=" + serverPort, "--format=yyyy-MM-dd HH:mm:ss");
+						.run("--spring.jmx.default-domain=module-" + serverPort, "--server.port=" + serverPort, "--spring.bus.location=file:" + file.getPath());
 			}
 			catch (Exception e) {
 				e.printStackTrace();
