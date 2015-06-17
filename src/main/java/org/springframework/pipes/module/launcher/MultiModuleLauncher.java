@@ -20,14 +20,16 @@ import java.io.File;
 import java.net.URL;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
-import java.util.jar.JarFile;
 
-import org.springframework.boot.SpringApplication;
+import org.springframework.boot.builder.SpringApplicationBuilder;
+import org.springframework.boot.loader.archive.JarFileArchive;
+import org.springframework.core.io.DefaultResourceLoader;
+import org.springframework.pipes.module.classloader.ParentLastURLClassLoader;
 import org.springframework.util.StringUtils;
-import org.springframework.xd.module.support.ParentLastURLClassLoader;
 
 /**
  * @author Mark Fisher
+ * @author Ilayaperumal Gopinathan
  */
 public class MultiModuleLauncher {
 
@@ -76,13 +78,13 @@ public class MultiModuleLauncher {
 		@Override
 		public void run() {
 			try {
-				URL url = new URL("jar", "","file:" + file.getAbsolutePath()+"!/");
-				ParentLastURLClassLoader classLoader = new ParentLastURLClassLoader(new URL[] { url }, Thread.currentThread().getContextClassLoader());
+				JarFileArchive jarFileArchive = new JarFileArchive(file);
+				ParentLastURLClassLoader classLoader = new ParentLastURLClassLoader(new URL[] { jarFileArchive.getUrl() },
+						Thread.currentThread().getContextClassLoader());
 				Thread.currentThread().setContextClassLoader(classLoader);
-				JarFile jarFile = new JarFile(file);
-				String mainClass = jarFile.getManifest().getMainAttributes().getValue("Start-Class");
-				jarFile.close();
-				new SpringApplication(classLoader.loadClass(mainClass)).run("--spring.jmx.default-domain=module-" + serverPort, "--server.port=" + serverPort, "--format=yyyy-MM-dd HH:mm:ss");
+				new SpringApplicationBuilder(jarFileArchive.getMainClass())
+						.resourceLoader(new DefaultResourceLoader(classLoader))
+						.run("--spring.jmx.default-domain=module-" + serverPort, "--server.port=" + serverPort);
 			}
 			catch (Exception e) {
 				e.printStackTrace();
