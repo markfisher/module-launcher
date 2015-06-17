@@ -32,7 +32,6 @@ dependencies {
 	compile("org.springframework.boot:spring-boot-starter-logging:${springBootVersion}")
 	compile("org.springframework.boot:spring-boot-starter-web:${springBootVersion}")
 	compile("org.springframework.bus:spring-xd-runner:1.0.0.BUILD-SNAPSHOT")
-	compile("org.springframework.xd:spring-xd-module:${springXdVersion}")
 	compile("org.springframework.xd:spring-xd-messagebus-redis:${springXdVersion}")
 }
 

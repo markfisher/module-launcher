@@ -7,6 +7,9 @@
 .settings
 artifacts/
 bin/
+out/
 build/
 dump.rdb
+*.ipr
+*.iws
 *.iml
