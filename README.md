@@ -26,8 +26,8 @@ cd ..
 
 ````
 mkdir -p /opt/spring/modules
-cp spring-bus/spring-xd-samples/source/target/spring-xd-module-runner-sample-source-1.0.0.BUILD-SNAPSHOT.jar /opt/spring/modules/
-cp spring-bus/spring-xd-samples/sink/target/spring-xd-module-runner-sample-sink-1.0.0.BUILD-SNAPSHOT.jar /opt/spring/modules/
+cp spring-bus/spring-xd-samples/source/target/spring-xd-module-runner-sample-source-1.0.0.BUILD-SNAPSHOT.jar /opt/spring/modules/time.jar
+cp spring-bus/spring-xd-samples/sink/target/spring-xd-module-runner-sample-sink-1.0.0.BUILD-SNAPSHOT.jar /opt/spring/modules/log.jar
 ````
 
 4: start redis locally via `redis-server` (optionally start `redis-cli` and use the `MONITOR` command to watch activity)
