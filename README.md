@@ -13,21 +13,21 @@ cd module-launcher
 cd ..
 ````
 
-2: clone and build the spring-bus project:
+2: clone and build the spring-cloud-streams project:
 
 ````
-git clone https://github.com/spring-projects/spring-bus.git
-cd spring-bus
+git clone https://github.com/spring-projects/spring-cloud-streams.git
+cd spring-cloud-streams
 mvn package
 cd ..
 ````
 
-3: copy the spring-bus source and sink sample JARs to `/opt/spring/modules`:
+3: copy the spring-cloud-streams source and sink sample JARs to `/opt/spring/modules`:
 
 ````
 mkdir -p /opt/spring/modules
-cp spring-bus/spring-xd-samples/source/target/spring-xd-module-runner-sample-source-1.0.0.BUILD-SNAPSHOT.jar /opt/spring/modules/time.jar
-cp spring-bus/spring-xd-samples/sink/target/spring-xd-module-runner-sample-sink-1.0.0.BUILD-SNAPSHOT.jar /opt/spring/modules/log.jar
+cp spring-cloud-streams/spring-cloud-streams-samples/source/target/spring-cloud-streams-sample-source-1.0.0.BUILD-SNAPSHOT-exec.jar /opt/spring/modules/time.jar
+cp spring-cloud-streams/spring-cloud-streams-samples/sink/target/spring-cloud-streams-sample-sink-1.0.0.BUILD-SNAPSHOT-exec.jar /opt/spring/modules/log.jar
 ````
 
 4: start redis locally via `redis-server` (optionally start `redis-cli` and use the `MONITOR` command to watch activity)
@@ -35,8 +35,8 @@ cp spring-bus/spring-xd-samples/sink/target/spring-xd-module-runner-sample-sink-
 ## Running Standalone
 
 ````
-java -Dmodule=time -jar module-launcher/build/libs/module-launcher-0.0.1-SNAPSHOT.jar
-java -Dmodule=log -jar  module-launcher/build/libs/module-launcher-0.0.1-SNAPSHOT.jar
+java -Dmodules=time -jar module-launcher/build/libs/module-launcher-0.0.1-SNAPSHOT.jar
+java -Dmodules=log -jar  module-launcher/build/libs/module-launcher-0.0.1-SNAPSHOT.jar
 ````
 
 The time messages will be emitted every 5 seconds. The console for the log module will display each:
@@ -61,6 +61,6 @@ cp -r /opt/spring/modules artifacts/
 2: run each module as a docker process by passing environment variables for the module name as well as the host machine's IP address for the redis connection to be established within the container:
 
 ````
-docker run -p 8080:8080 -e MODULE=time -e SPRING_REDIS_HOST=<host.ip> 192.168.59.103:5000/module-launcher
-docker run -p 8081:8081 -e MODULE=log -e SPRING_REDIS_HOST=<host.ip> 192.168.59.103:5000/module-launcher
+docker run -p 8080:8080 -e MODULES=time -e SPRING_REDIS_HOST=<host.ip> 192.168.59.103:5000/module-launcher
+docker run -p 8081:8081 -e MODULES=log -e SPRING_REDIS_HOST=<host.ip> 192.168.59.103:5000/module-launcher
 ````
