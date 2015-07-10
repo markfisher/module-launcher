@@ -18,12 +18,15 @@ package org.springframework.pipes.module.launcher;
 
 import java.io.File;
 import java.net.URL;
-import java.util.Random;
+import java.util.Properties;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.loader.archive.JarFileArchive;
+import org.springframework.context.ApplicationContextInitializer;
+import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.core.env.PropertiesPropertySource;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.pipes.module.classloader.ParentLastURLClassLoader;
 import org.springframework.util.StringUtils;
@@ -64,7 +67,7 @@ public class ModuleLauncher {
 		Executor executor = Executors.newFixedThreadPool(modules.length);
 		for (String module : modules) {
 			module = (module.endsWith(".jar")) ? module : module + ".jar";
-			executor.execute(new ModuleLaunchTask(new File(moduleHome, module)));
+			executor.execute(new ModuleLaunchTask(new File(moduleHome, module), module));
 		}
 	}
 
@@ -72,8 +75,11 @@ public class ModuleLauncher {
 
 		private final File file;
 
-		ModuleLaunchTask(File file) {
+		private final String module;
+
+		ModuleLaunchTask(File file, String module) {
 			this.file = file;
+			this.module = module;
 		}
 
 		@Override
@@ -85,7 +91,19 @@ public class ModuleLauncher {
 				Thread.currentThread().setContextClassLoader(classLoader);
 				new SpringApplicationBuilder(jarFileArchive.getMainClass())
 						.resourceLoader(new DefaultResourceLoader(classLoader))
-						.run("--spring.jmx.default-domain=module-" + new Random().nextInt());
+						.initializers(new ApplicationContextInitializer<ConfigurableApplicationContext>() {
+							@Override
+							public void initialize(ConfigurableApplicationContext applicationContext) {
+								Properties initialProperties = new Properties();
+								String moduleName = StringUtils.delete(module, ".jar");
+								initialProperties.put("spring.jmx.default-domain", moduleName +
+										StringUtils.replace(applicationContext.getId(), "application:", "-"));
+								PropertiesPropertySource moduleLauncherPS =
+										new PropertiesPropertySource("moduleLauncherProps", initialProperties);
+								applicationContext.getEnvironment().getPropertySources().addLast(moduleLauncherPS);
+							}
+						})
+						.run();
 			}
 			catch (Exception e) {
 				e.printStackTrace();
