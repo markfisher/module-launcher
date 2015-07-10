@@ -1,7 +1,7 @@
 buildscript {
 	ext {
 		springBootVersion = '1.3.0.BUILD-SNAPSHOT'
-		springXdVersion = '2.0.0.BUILD-SNAPSHOT'
+		springXdVersion = '1.2.1.BUILD-SNAPSHOT'
 	}
 	repositories {
 		maven { url "http://repo.spring.io/plugins-snapshot" }
@@ -24,8 +24,7 @@ sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
 repositories {
-	mavenLocal()
-	maven { url "http://repo.spring.io/plugins-snapshot" }
+	maven { url "http://repo.spring.io/libs-snapshot" }
 }
 
 dependencies {
