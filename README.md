@@ -16,9 +16,9 @@ cd ..
 2: clone and build the spring-cloud-streams project:
 
 ````
-git clone https://github.com/spring-projects/spring-cloud-streams.git
+git clone https://github.com/spring-cloud/spring-cloud-streams.git
 cd spring-cloud-streams
-mvn package
+mvn -s .settings.xml package
 cd ..
 ````
 
@@ -36,7 +36,7 @@ cp spring-cloud-streams/spring-cloud-streams-samples/sink/target/spring-cloud-st
 
 ````
 java -Dmodules=time -Dserver.port=8081 -jar module-launcher/build/libs/module-launcher-0.0.1-SNAPSHOT.jar
-java -Dmodules=log -Dserver.port=8082 -jar  module-launcher/build/libs/module-launcher-0.0.1-SNAPSHOT.jar
+java -Dmodules=log -Dserver.port=8082 -jar module-launcher/build/libs/module-launcher-0.0.1-SNAPSHOT.jar
 ````
 
 The time messages will be emitted every 5 seconds. The console for the log module will display each:
@@ -63,4 +63,33 @@ cp -r /opt/spring/modules artifacts/
 ````
 docker run -p 8080:8080 -e MODULES=time -e SPRING_REDIS_HOST=<host.ip> 192.168.59.103:5000/module-launcher
 docker run -p 8081:8081 -e MODULES=log -e SPRING_REDIS_HOST=<host.ip> 192.168.59.103:5000/module-launcher
+````
+
+## Running on Lattice
+
+### Initial Setup (if necessary)
+
+1: Launch lattice with vagrant as described [here](http://lattice.cf/docs/getting-started/).
+
+2: Run a private Docker registry, and configure Lattice to use that as described [here](http://lattice.cf/docs/private-docker-registry/).
+
+### Deploying Modules
+
+1: Push the Docker image to the private registry (if necessary, run `$(boot2docker shellinit)` first):
+
+````
+$ docker push 192.168.59.103:5000/module-launcher
+````
+
+2: Create a Redis instance on Lattice (running as root):
+
+````
+$ ltc create redis redis -r
+````
+
+3: Run the modules as long-running processes (LRPs) on Lattice:
+
+````
+$ ltc create time 192.168.59.103:5000/module-launcher -e MODULES=time -e SPRING_PROFILES_ACTIVE=cloud
+$ ltc create log 192.168.59.103:5000/module-launcher -e MODULES=log -e SPRING_PROFILES_ACTIVE=cloud
 ````
