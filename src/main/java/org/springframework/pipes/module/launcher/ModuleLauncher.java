@@ -60,53 +60,63 @@ public class ModuleLauncher {
 		if (moduleHome == null) {
 			moduleHome = DEFAULT_MODULE_HOME;
 		}
-		launchModules(new File(moduleHome), StringUtils.tokenizeToStringArray(modules, ","));
+		launchModules(moduleHome, StringUtils.tokenizeToStringArray(modules, ","));
 	}
 
-	private static void launchModules(File moduleHome, String... modules) {
+	private static void launchModules(String moduleHome, String... modules) {
 		Executor executor = Executors.newFixedThreadPool(modules.length);
 		for (String module : modules) {
 			module = (module.endsWith(".jar")) ? module : module + ".jar";
-			executor.execute(new ModuleLaunchTask(new File(moduleHome, module), module));
+			executor.execute(new ModuleLaunchTask(moduleHome, module));
 		}
 	}
 
 	private static class ModuleLaunchTask implements Runnable {
 
-		private final File file;
+		private final String moduleHome;
 
 		private final String module;
 
-		ModuleLaunchTask(File file, String module) {
-			this.file = file;
+		ModuleLaunchTask(String moduleHome, String module) {
+			this.moduleHome = moduleHome;
 			this.module = module;
 		}
 
 		@Override
 		public void run() {
 			try {
-				JarFileArchive jarFileArchive = new JarFileArchive(file);
+				JarFileArchive jarFileArchive = new JarFileArchive(new File(moduleHome, module));
 				ParentLastURLClassLoader classLoader = new ParentLastURLClassLoader(new URL[] { jarFileArchive.getUrl() },
 						Thread.currentThread().getContextClassLoader());
 				Thread.currentThread().setContextClassLoader(classLoader);
 				new SpringApplicationBuilder(jarFileArchive.getMainClass())
 						.resourceLoader(new DefaultResourceLoader(classLoader))
-						.initializers(new ApplicationContextInitializer<ConfigurableApplicationContext>() {
-							@Override
-							public void initialize(ConfigurableApplicationContext applicationContext) {
-								Properties initialProperties = new Properties();
-								String moduleName = StringUtils.delete(module, ".jar");
-								initialProperties.put("spring.jmx.default-domain", moduleName +
-										StringUtils.replace(applicationContext.getId(), "application:", "-"));
-								PropertiesPropertySource moduleLauncherPS =
-										new PropertiesPropertySource("moduleLauncherProps", initialProperties);
-								applicationContext.getEnvironment().getPropertySources().addLast(moduleLauncherPS);
-							}
-						})
+						.initializers(new ModuleLauncherPropertySourceInitializer(module))
 						.run();
 			}
 			catch (Exception e) {
 				e.printStackTrace();
+			}
+		}
+
+		private static class ModuleLauncherPropertySourceInitializer
+				implements ApplicationContextInitializer<ConfigurableApplicationContext> {
+
+			private final String module;
+
+			ModuleLauncherPropertySourceInitializer(String module) {
+				this.module = module;
+			}
+
+			@Override
+			public void initialize(ConfigurableApplicationContext applicationContext) {
+				Properties initialProperties = new Properties();
+				String moduleName = StringUtils.delete(module, ".jar");
+				initialProperties.put("spring.jmx.default-domain", moduleName +
+						StringUtils.replace(applicationContext.getId(), "application:", "-"));
+				PropertiesPropertySource moduleLauncherPS =
+						new PropertiesPropertySource("moduleLauncherProps", initialProperties);
+				applicationContext.getEnvironment().getPropertySources().addLast(moduleLauncherPS);
 			}
 		}
 	}
