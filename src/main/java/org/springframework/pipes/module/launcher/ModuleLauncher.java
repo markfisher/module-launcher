@@ -18,6 +18,7 @@ package org.springframework.pipes.module.launcher;
 
 import java.io.File;
 import java.net.URL;
+import java.util.Random;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
@@ -69,15 +70,10 @@ public class ModuleLauncher {
 
 	private static class ModuleLaunchTask implements Runnable {
 
-		private static int SERVER_PORT_SEQUENCE = 8080;
-
 		private final File file;
-
-		private final int serverPort;
 
 		ModuleLaunchTask(File file) {
 			this.file = file;
-			this.serverPort = SERVER_PORT_SEQUENCE++;
 		}
 
 		@Override
@@ -89,7 +85,7 @@ public class ModuleLauncher {
 				Thread.currentThread().setContextClassLoader(classLoader);
 				new SpringApplicationBuilder(jarFileArchive.getMainClass())
 						.resourceLoader(new DefaultResourceLoader(classLoader))
-						.run("--spring.jmx.default-domain=module-" + serverPort, "--server.port=" + serverPort);
+						.run("--spring.jmx.default-domain=module-" + new Random().nextInt());
 			}
 			catch (Exception e) {
 				e.printStackTrace();

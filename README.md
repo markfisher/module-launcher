@@ -35,8 +35,8 @@ cp spring-cloud-streams/spring-cloud-streams-samples/sink/target/spring-cloud-st
 ## Running Standalone
 
 ````
-java -Dmodules=time -jar module-launcher/build/libs/module-launcher-0.0.1-SNAPSHOT.jar
-java -Dmodules=log -jar  module-launcher/build/libs/module-launcher-0.0.1-SNAPSHOT.jar
+java -Dmodules=time -Dserver.port=8081 -jar module-launcher/build/libs/module-launcher-0.0.1-SNAPSHOT.jar
+java -Dmodules=log -Dserver.port=8082 -jar  module-launcher/build/libs/module-launcher-0.0.1-SNAPSHOT.jar
 ````
 
 The time messages will be emitted every 5 seconds. The console for the log module will display each:
