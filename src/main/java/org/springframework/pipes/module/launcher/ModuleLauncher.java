@@ -18,6 +18,7 @@ package org.springframework.pipes.module.launcher;
 
 import java.io.File;
 import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.Properties;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -28,7 +29,6 @@ import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.core.env.PropertiesPropertySource;
 import org.springframework.core.io.DefaultResourceLoader;
-import org.springframework.pipes.module.classloader.ParentLastURLClassLoader;
 import org.springframework.util.StringUtils;
 
 /**
@@ -86,7 +86,7 @@ public class ModuleLauncher {
 		public void run() {
 			try {
 				JarFileArchive jarFileArchive = new JarFileArchive(new File(moduleHome, module));
-				ParentLastURLClassLoader classLoader = new ParentLastURLClassLoader(new URL[] { jarFileArchive.getUrl() },
+				URLClassLoader classLoader = new URLClassLoader(new URL[] { jarFileArchive.getUrl() },
 						Thread.currentThread().getContextClassLoader());
 				Thread.currentThread().setContextClassLoader(classLoader);
 				new SpringApplicationBuilder(jarFileArchive.getMainClass())
