@@ -44,6 +44,20 @@ public class ModuleLauncher {
 
 	private static final String DEFAULT_MODULE_HOME = "/opt/spring/modules";
 
+	private final File moduleHome;
+
+	public ModuleLauncher(File moduleHome) {
+		this.moduleHome = moduleHome;
+	}
+
+	public void launch(String... modules) {
+		Executor executor = Executors.newFixedThreadPool(modules.length);
+		for (String module : modules) {
+			module = (module.endsWith(".jar")) ? module : module + ".jar";
+			executor.execute(new ModuleLaunchTask(moduleHome, module));
+		}
+	}
+
 	public static void main(String[] args) throws Exception {
 		String modules = System.getProperty("modules");
 		if (modules == null) {
@@ -60,24 +74,18 @@ public class ModuleLauncher {
 		if (moduleHome == null) {
 			moduleHome = DEFAULT_MODULE_HOME;
 		}
-		launchModules(moduleHome, StringUtils.tokenizeToStringArray(modules, ","));
+		ModuleLauncher launcher = new ModuleLauncher(new File(moduleHome));
+		launcher.launch(StringUtils.tokenizeToStringArray(modules, ","));
 	}
 
-	private static void launchModules(String moduleHome, String... modules) {
-		Executor executor = Executors.newFixedThreadPool(modules.length);
-		for (String module : modules) {
-			module = (module.endsWith(".jar")) ? module : module + ".jar";
-			executor.execute(new ModuleLaunchTask(moduleHome, module));
-		}
-	}
 
 	private static class ModuleLaunchTask implements Runnable {
 
-		private final String moduleHome;
+		private final File moduleHome;
 
 		private final String module;
 
-		ModuleLaunchTask(String moduleHome, String module) {
+		ModuleLaunchTask(File moduleHome, String module) {
 			this.moduleHome = moduleHome;
 			this.module = module;
 		}
