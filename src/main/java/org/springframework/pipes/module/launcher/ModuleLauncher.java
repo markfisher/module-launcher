@@ -121,7 +121,7 @@ public class ModuleLauncher {
 				Properties initialProperties = new Properties();
 				String moduleName = StringUtils.delete(module, ".jar");
 				initialProperties.put("spring.jmx.default-domain", moduleName +
-						StringUtils.replace(applicationContext.getId(), "application:", "-"));
+						StringUtils.replace(applicationContext.getId(), ":", "-"));
 				PropertiesPropertySource moduleLauncherPS =
 						new PropertiesPropertySource("moduleLauncherProps", initialProperties);
 				applicationContext.getEnvironment().getPropertySources().addLast(moduleLauncherPS);

@@ -2,9 +2,12 @@ buildscript {
 	ext {
 		springBootVersion = '1.3.0.BUILD-SNAPSHOT'
 		springXdVersion = '1.2.1.BUILD-SNAPSHOT'
+		springCloudVersion = '1.1.1.RELEASE'
 	}
 	repositories {
-		maven { url "http://repo.spring.io/plugins-snapshot" }
+		mavenCentral()
+		maven { url "http://repo.spring.io/snapshot" }
+		maven { url "http://repo.spring.io/milestone" }
 	}
 	dependencies {
 		classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
@@ -24,15 +27,24 @@ sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
 repositories {
-	maven { url "http://repo.spring.io/libs-snapshot" }
+	// Maven Local is for receptor client: https://github.com/markfisher/receptor-client
+	mavenLocal()
+	mavenCentral()
+	maven { url "http://repo.spring.io/snapshot" }
+	maven { url "http://repo.spring.io/milestone" }
 }
 
 dependencies {
 	compile("org.springframework.boot:spring-boot-starter-logging:${springBootVersion}")
 	compile("org.springframework.boot:spring-boot-starter-web:${springBootVersion}")
-	compile("org.springframework.cloud:spring-cloud-streams:1.0.0.BUILD-SNAPSHOT")
+	// TODO: Investigate why adding the following jars via spring-cloud-streams doesn't help here.
+	// This is most likely to do with the Module Launcher classloader to set all the entries
+	// from the module uber jar in the classpath.
 	compile("org.springframework.xd:spring-xd-messagebus-redis:${springXdVersion}")
 	compile("org.springframework.boot:spring-boot-starter-redis:${springBootVersion}")
+	compile("org.springframework.cloud:spring-cloud-streams:1.0.0.BUILD-SNAPSHOT")
+	compile("org.springframework.cloud:spring-cloud-lattice-connector:1.0.2.BUILD-SNAPSHOT")
+	compile("org.springframework.cloud:spring-cloud-spring-service-connector:${springCloudVersion}")
 }
 
 eclipse {
