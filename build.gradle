@@ -22,7 +22,7 @@ group = 'org.springframework.cloud'
 version = '0.0.1-SNAPSHOT'
 
 jar {
-	baseName = 'spring-cloud-streams-module-launcher'
+	baseName = 'spring-cloud-stream-module-launcher'
 }
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
