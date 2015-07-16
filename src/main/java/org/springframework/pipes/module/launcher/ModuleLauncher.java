@@ -17,25 +17,22 @@
 package org.springframework.pipes.module.launcher;
 
 import java.io.File;
-import java.net.URL;
-import java.net.URLClassLoader;
-import java.util.Properties;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
-import org.springframework.boot.builder.SpringApplicationBuilder;
+import org.springframework.boot.loader.ModuleJarLauncher;
 import org.springframework.boot.loader.archive.JarFileArchive;
-import org.springframework.context.ApplicationContextInitializer;
-import org.springframework.context.ConfigurableApplicationContext;
-import org.springframework.core.env.PropertiesPropertySource;
-import org.springframework.core.io.DefaultResourceLoader;
-import org.springframework.util.StringUtils;
 
 /**
  * Bootstrap for launching one or more modules. The module path(s), relative to the module home, must be provided via
  * the "modules" system property or "MODULES" environment variable as a comma-delimited list. The module home directory
  * itself may be provided via the "module.home" system property or "MODULE_HOME" environment variable. The default
  * module home directory is: /opt/spring/modules
+ * <p>
+ * To pass args to a module, prefix with the module name and a dot. The arg name will be de-qualified and passed along.
+ * For example: <code>--foo.bar=123</code> becomes <code>--bar=123</code> and is only passed to the 'foo' module.
  *
  * @author Mark Fisher
  * @author Ilayaperumal Gopinathan
@@ -50,11 +47,16 @@ public class ModuleLauncher {
 		this.moduleHome = moduleHome;
 	}
 
-	public void launch(String... modules) {
+	public void launch(String[] modules, String[] args) {
 		Executor executor = Executors.newFixedThreadPool(modules.length);
 		for (String module : modules) {
-			module = (module.endsWith(".jar")) ? module : module + ".jar";
-			executor.execute(new ModuleLaunchTask(moduleHome, module));
+			List<String> moduleArgs = new ArrayList<>(); 
+			for (String arg : args) {
+				if (arg.startsWith("--" + module + ".")) {
+					moduleArgs.add("--" + arg.substring(module.length() + 3));
+				}
+			}
+			executor.execute(new ModuleLaunchTask(moduleHome, module + ".jar", moduleArgs.toArray(new String[moduleArgs.size()])));
 		}
 	}
 
@@ -75,56 +77,33 @@ public class ModuleLauncher {
 			moduleHome = DEFAULT_MODULE_HOME;
 		}
 		ModuleLauncher launcher = new ModuleLauncher(new File(moduleHome));
-		launcher.launch(StringUtils.tokenizeToStringArray(modules, ","));
+		launcher.launch(modules.split(","), args);
 	}
 
 
 	private static class ModuleLaunchTask implements Runnable {
 
-		private final File moduleHome;
+		private final File directory;
 
 		private final String module;
 
-		ModuleLaunchTask(File moduleHome, String module) {
-			this.moduleHome = moduleHome;
+		private final String[] args;
+
+		ModuleLaunchTask(File directory, String module, String[] args) {
+			this.directory = directory;
 			this.module = module;
+			this.args = args;
 		}
 
 		@Override
 		public void run() {
 			try {
-				JarFileArchive jarFileArchive = new JarFileArchive(new File(moduleHome, module));
-				URLClassLoader classLoader = new URLClassLoader(new URL[] { jarFileArchive.getUrl() },
-						Thread.currentThread().getContextClassLoader());
-				Thread.currentThread().setContextClassLoader(classLoader);
-				new SpringApplicationBuilder(jarFileArchive.getMainClass())
-						.resourceLoader(new DefaultResourceLoader(classLoader))
-						.initializers(new ModuleLauncherPropertySourceInitializer(module))
-						.run();
+				JarFileArchive jarFileArchive = new JarFileArchive(new File(directory, module));
+				ModuleJarLauncher jarLauncher = new ModuleJarLauncher(jarFileArchive);
+				jarLauncher.launch(args);
 			}
 			catch (Exception e) {
 				e.printStackTrace();
-			}
-		}
-
-		private static class ModuleLauncherPropertySourceInitializer
-				implements ApplicationContextInitializer<ConfigurableApplicationContext> {
-
-			private final String module;
-
-			ModuleLauncherPropertySourceInitializer(String module) {
-				this.module = module;
-			}
-
-			@Override
-			public void initialize(ConfigurableApplicationContext applicationContext) {
-				Properties initialProperties = new Properties();
-				String moduleName = StringUtils.delete(module, ".jar");
-				initialProperties.put("spring.jmx.default-domain", moduleName +
-						StringUtils.replace(applicationContext.getId(), ":", "-"));
-				PropertiesPropertySource moduleLauncherPS =
-						new PropertiesPropertySource("moduleLauncherProps", initialProperties);
-				applicationContext.getEnvironment().getPropertySources().addLast(moduleLauncherPS);
 			}
 		}
 	}
