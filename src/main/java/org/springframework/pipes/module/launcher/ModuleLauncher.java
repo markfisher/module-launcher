@@ -56,6 +56,7 @@ public class ModuleLauncher {
 					moduleArgs.add("--" + arg.substring(module.length() + 3));
 				}
 			}
+			moduleArgs.add("--spring.jmx.default-domain=" + module.replace("/", "."));
 			executor.execute(new ModuleLaunchTask(moduleHome, module + ".jar", moduleArgs.toArray(new String[moduleArgs.size()])));
 		}
 	}
