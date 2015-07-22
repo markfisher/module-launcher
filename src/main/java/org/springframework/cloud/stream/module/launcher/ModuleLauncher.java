@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.pipes.module.launcher;
+package org.springframework.cloud.stream.module.launcher;
 
 import java.io.File;
 import java.util.ArrayList;
